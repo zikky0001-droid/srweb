@@ -66,8 +66,6 @@ app.use(cors({
 
 app.use(compression());
 app.use(express.json());
-
-// ✅ SERVE STATIC FILES (CSS, JS, images)
 app.use(express.static(__dirname));
 
 // ============================================
@@ -127,7 +125,10 @@ app.get('/api/record', async (req, res) => {
                 '--disable-accelerated-2d-canvas',
                 '--disable-gpu',
                 '--disable-software-rasterizer',
-                '--disable-features=IsolateOrigins,site-per-process'
+                '--disable-features=IsolateOrigins,site-per-process',
+                '--disable-background-timer-throttling',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-renderer-backgrounding'
             ]
         });
         
@@ -169,13 +170,16 @@ app.get('/api/record', async (req, res) => {
             timeout: 30000
         });
         
-        await page.waitForTimeout(2000);
+        // ✅ FIXED: Use setTimeout instead of page.waitForTimeout
+        console.log('⏳ Waiting for page to load...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
         console.log(`⏱️ Recording for ${duration} seconds...`);
         await new Promise(resolve => setTimeout(resolve, (parseInt(duration) * 1000) + 2000));
         
         try {
             await recorder.stop();
+            console.log('🛑 Recording stopped');
         } catch (e) {
             console.log('Recorder already stopped');
         }
@@ -277,22 +281,18 @@ app.get('/api/status', (req, res) => {
 });
 
 // ============================================
-// ✅ FIXED: SERVE INDEX.HTML
+// SERVE INDEX.HTML
 // ============================================
 
-// Root route - serve index.html
 app.get('/', (req, res) => {
     console.log('📄 Serving index.html');
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Catch-all for SPA - serve index.html for any non-API route
 app.get('*', (req, res) => {
-    // Skip API routes
     if (req.path.startsWith('/api/') || req.path === '/ping') {
         return res.status(404).json({ error: 'Not found' });
     }
-    // Serve index.html for all other routes (SPA support)
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
@@ -307,6 +307,5 @@ app.listen(PORT, () => {
     console.log(`📹 Recordings directory: ${recordingsDir}`);
     console.log(`🔧 Chrome: ${CHROME_PATH || 'NOT FOUND ❌'}`);
     console.log(`📁 Serving files from: ${__dirname}`);
-    console.log(`🌐 Visit: http://localhost:${PORT}`);
+    console.log(`🌐 Visit: https://zrecord.onrender.com`);
 });
-
