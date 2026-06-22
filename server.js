@@ -9,16 +9,13 @@ import fs from 'fs';
 import puppeteer from 'puppeteer-core';
 import { PuppeteerScreenRecorder } from 'puppeteer-screen-recorder';
 
-// ✅ Get __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// ✅ Log current directory for debugging
 console.log(`📁 Current directory: ${__dirname}`);
-console.log(`📁 Files in directory:`, fs.readdirSync(__dirname));
 
 // ============================================
 // FIND CHROME
@@ -39,8 +36,6 @@ function findChromePath() {
             return chromePath;
         }
     }
-    
-    console.warn('⚠️ Chrome not found!');
     return null;
 }
 
@@ -72,10 +67,8 @@ app.use(cors({
 app.use(compression());
 app.use(express.json());
 
-// ✅ FIXED: Serve static files from the current directory
+// ✅ SERVE STATIC FILES (CSS, JS, images)
 app.use(express.static(__dirname));
-// Also try serving from /app if needed
-app.use('/static', express.static(path.join(__dirname, 'static')));
 
 // ============================================
 // CREATE RECORDINGS DIRECTORY
@@ -284,35 +277,23 @@ app.get('/api/status', (req, res) => {
 });
 
 // ============================================
-// ✅ FIXED: Serve index.html for all routes
+// ✅ FIXED: SERVE INDEX.HTML
 // ============================================
 
-// Serve the main page
+// Root route - serve index.html
 app.get('/', (req, res) => {
-    const indexPath = path.join(__dirname, 'index.html');
-    console.log(`📄 Serving index.html from: ${indexPath}`);
-    
-    if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-    } else {
-        console.error('❌ index.html not found!');
-        res.status(404).send('index.html not found');
-    }
+    console.log('📄 Serving index.html');
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Catch-all for SPA - serve index.html
+// Catch-all for SPA - serve index.html for any non-API route
 app.get('*', (req, res) => {
     // Skip API routes
     if (req.path.startsWith('/api/') || req.path === '/ping') {
         return res.status(404).json({ error: 'Not found' });
     }
-    
-    const indexPath = path.join(__dirname, 'index.html');
-    if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-    } else {
-        res.status(404).send('Page not found');
-    }
+    // Serve index.html for all other routes (SPA support)
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // ============================================
@@ -326,6 +307,6 @@ app.listen(PORT, () => {
     console.log(`📹 Recordings directory: ${recordingsDir}`);
     console.log(`🔧 Chrome: ${CHROME_PATH || 'NOT FOUND ❌'}`);
     console.log(`📁 Serving files from: ${__dirname}`);
+    console.log(`🌐 Visit: http://localhost:${PORT}`);
 });
-
 
