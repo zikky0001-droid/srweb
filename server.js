@@ -171,7 +171,7 @@ app.get('/api/record', async (req, res) => {
         console.log(`🌐 Navigating to: ${url}`);
         await page.goto(url, {
             waitUntil: 'networkidle2',
-            timeout: 15000  // ✅ Reduced timeout
+            timeout: 35000
         });
         
         // ✅ Small delay for page stability
