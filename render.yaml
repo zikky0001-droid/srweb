@@ -1,36 +1,13 @@
 services:
   - type: web
     name: srweb
-    runtime: node
-    plan: free
+    env: node
     region: oregon
-    
-    buildCommand: |
-      npm install
-      npx puppeteer browsers install chrome
-      npm install puppeteer-screen-recorder
-    
+    plan: free
+    buildCommand: npm install
     startCommand: node server.js
-    
     envVars:
       - key: NODE_VERSION
-        value: 20.18.0
-      - key: PORT
-        value: 3000
-      - key: PUPPETEER_SKIP_DOWNLOAD
-        value: false
-      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
-        value: false
-      - key: PUPPETEER_CACHE_DIR
-        value: /opt/render/.cache/puppeteer
-      - key: PUPPETEER_EXECUTABLE_PATH
-        value: /opt/render/.cache/puppeteer/chrome/linux-*/chrome-linux64/chrome
-    
-    disk:
-      name: recordings
-      mountPath: /opt/render/project/src/recordings
-      sizeGB: 1
-    
-    healthCheckPath: /api/health
-    healthCheckTimeout: 100
-    numInstances: 1
+        value: 18.0.0
+      - key: NODE_ENV
+        value: production

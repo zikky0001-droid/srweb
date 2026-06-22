@@ -1,71 +1,139 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SRWEB - Screen Record Websites</title>
-    <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRWEB - Website Recorder</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🎥 SRWEB</h1>
-            <p>Screen Record Any Website</p>
-        </header>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <div class="brand-logo">
+                <i class="fas fa-video"></i>
+            </div>
+            <span class="brand-name">SR<span class="brand-highlight">WEB</span></span>
+        </div>
+        <div class="nav-links">
+            <a href="#" class="active" id="homeBtn"><i class="fas fa-home"></i> Home</a>
+            <a href="#" id="recordBtn"><i class="fas fa-play"></i> Record</a>
+            <a href="#" id="whatsappBtn"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+            <a href="#" id="statusBtn"><i class="fas fa-chart-line"></i> Status</a>
+        </div>
+        <button class="theme-toggle" id="themeToggle">
+            <i class="fas fa-moon"></i>
+        </button>
+    </nav>
 
-        <main>
-            <div class="card">
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    <span class="gradient-text">SRWEB</span>
+                </h1>
+                <p class="hero-subtitle">Record any website in seconds</p>
+                
+                <div class="recorder-box">
+                    <div class="input-group">
+                        <input type="text" id="recordUrl" placeholder="Enter website URL (e.g., https://example.com)">
+                        <button id="recordBtn" class="btn-primary">
+                            <i class="fas fa-play"></i> Record
+                        </button>
+                    </div>
+                    <div class="options-group">
+                        <div class="option-item">
+                            <label>Duration</label>
+                            <select id="recordDuration">
+                                <option value="5">5 seconds</option>
+                                <option value="10" selected>10 seconds</option>
+                                <option value="15">15 seconds</option>
+                                <option value="30">30 seconds</option>
+                                <option value="60">60 seconds</option>
+                            </select>
+                        </div>
+                        <div class="option-item">
+                            <label>Format</label>
+                            <select id="recordFormat">
+                                <option value="mp4">MP4</option>
+                                <option value="webm">WEBM</option>
+                                <option value="avi">AVI</option>
+                                <option value="mov">MOV</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Status Section -->
+        <section class="status-section" id="statusSection">
+            <div class="status-grid">
+                <div class="status-card">
+                    <i class="fas fa-video"></i>
+                    <h3 id="recordingsCount">0</h3>
+                    <p>Recordings Made</p>
+                </div>
+                <div class="status-card">
+                    <i class="fas fa-clock"></i>
+                    <h3 id="uptime">--</h3>
+                    <p>Uptime</p>
+                </div>
+                <div class="status-card">
+                    <i class="fas fa-check-circle" style="color: #00ff88;"></i>
+                    <h3 id="serverStatus">Online</h3>
+                    <p>Server Status</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Progress -->
+        <div class="progress-section" id="progressSection" style="display: none;">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text">
+                <span id="progressLabel">Processing...</span>
+                <span id="progressPercent">0%</span>
+            </div>
+        </div>
+
+        <!-- History -->
+        <section class="history-section">
+            <h2><i class="fas fa-history"></i> Recording History</h2>
+            <div id="historyList" class="history-list">
+                <div class="empty-state">
+                    <i class="fas fa-video" style="font-size:3rem; color:var(--text-muted);"></i>
+                    <p>No recordings yet. Start recording!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- WhatsApp Section -->
+        <section class="whatsapp-section" id="whatsappSection" style="display: none;">
+            <h2><i class="fab fa-whatsapp" style="color:#25D366;"></i> WhatsApp Integration</h2>
+            <div class="whatsapp-box">
                 <div class="input-group">
-                    <label for="urlInput">Website URL</label>
-                    <input 
-                        type="url" 
-                        id="urlInput" 
-                        placeholder="https://example.com"
-                        value="https://example.com"
-                    />
+                    <input type="text" id="whatsappNumber" placeholder="Phone number (e.g., 2348012345678)">
+                    <input type="text" id="whatsappMessage" placeholder="Message to send">
+                    <button id="whatsappSendBtn" class="btn-whatsapp">
+                        <i class="fab fa-whatsapp"></i> Send
+                    </button>
                 </div>
-
-                <div class="input-group">
-                    <label for="durationInput">Duration (seconds)</label>
-                    <input 
-                        type="number" 
-                        id="durationInput" 
-                        min="5" 
-                        max="60" 
-                        value="15"
-                    />
-                    <span class="hint">Max 60 seconds</span>
-                </div>
-
-                <button id="recordBtn" class="btn-primary">
-                    <span class="icon">🔴</span> Start Recording
-                </button>
-            </div>
-
-            <div id="status" class="status hidden">
-                <div class="status-content">
-                    <div class="spinner"></div>
-                    <p id="statusText">Loading...</p>
+                <div class="whatsapp-info">
+                    <p><i class="fas fa-info-circle"></i> Format: 2348012345678 (country code + number)</p>
+                    <p><i class="fas fa-info-circle"></i> Include a URL in your message to record websites via WhatsApp</p>
                 </div>
             </div>
-
-            <div id="result" class="result hidden">
-                <div class="video-container">
-                    <video id="videoPlayer" controls></video>
-                </div>
-                <div class="video-info">
-                    <p><strong>URL:</strong> <span id="resultUrl"></span></p>
-                    <p><strong>Duration:</strong> <span id="resultDuration"></span>s</p>
-                    <p><strong>Size:</strong> <span id="resultSize"></span> MB</p>
-                </div>
-                <button id="downloadBtn" class="btn-secondary">⬇️ Download Video</button>
-            </div>
-        </main>
-
-        <footer>
-            <p>Powered by DEV ZIKKY TECH</p>
-        </footer>
+        </section>
     </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
 
     <script src="script.js"></script>
 </body>
