@@ -1,0 +1,66 @@
+# Render Deployment Configuration for SRWEB
+# Deploy on Render.com with this file
+
+services:
+  # ============================================
+  # WEB SERVICE (API + Frontend)
+  # ============================================
+  - type: web
+    name: srweb
+    runtime: node
+    plan: free
+    region: oregon
+    
+    # Build and start commands
+    buildCommand: npm install
+    startCommand: npm start
+    
+    # Environment variables
+    envVars:
+      - key: NODE_VERSION
+        value: 20.0.0
+      - key: PORT
+        value: 3000
+      - key: CHROME_PATH
+        value: /usr/bin/google-chrome-stable
+      - key: PUPPETEER_SKIP_DOWNLOAD
+        value: true
+      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+        value: true
+    
+    # Disk space for recordings
+    disk:
+      name: recordings
+      mountPath: /opt/render/project/src/recordings
+      sizeGB: 1
+    
+    # Health check
+    healthCheckPath: /api/health
+    healthCheckTimeout: 100
+    
+    # Auto-scaling (free plan limits)
+    numInstances: 1
+    
+    # Build filters
+    buildFilter:
+      paths:
+        - package.json
+        - server.js
+        - index.html
+        - style.css
+        - script.js
+
+  # ============================================
+  # CRON JOB (Optional - Cleanup old recordings)
+  # ============================================
+  - type: cron
+    name: srweb-cleanup
+    runtime: node
+    schedule: "0 */6 * * *"  # Every 6 hours
+    region: oregon
+    buildCommand: echo "No build needed"
+    startCommand: node -e "const fs=require('fs');const path=require('path');const d='/opt/render/project/src/recordings';if(fs.existsSync(d)){const files=fs.readdirSync(d);const now=Date.now();files.forEach(f=>{const p=path.join(d,f);try{const s=fs.statSync(p);if(now-s.mtimeMs>3600000){fs.unlinkSync(p);console.log('Deleted:',f);}}catch(e){}});}"
+    
+    envVars:
+      - key: NODE_VERSION
+        value: 25.0.0
