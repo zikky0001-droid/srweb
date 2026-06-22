@@ -1,13 +1,15 @@
 services:
   - type: web
     name: srweb
-    env: node
+    env: docker
     region: oregon
     plan: free
-    buildCommand: npm install
-    startCommand: node server.js
+    dockerfilePath: ./Dockerfile
     envVars:
-      - key: NODE_VERSION
-        value: 25.0.0
-      - key: PUPPETEER_CACHE_DIR
-        value: /opt/render/.cache/puppeteer
+      - key: NODE_ENV
+        value: production
+      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+        value: true
+      - key: PUPPETEER_EXECUTABLE_PATH
+        value: /usr/bin/google-chrome-stable
+    healthCheckPath: /ping

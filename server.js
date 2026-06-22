@@ -6,7 +6,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import axios from 'axios';
 import fs from 'fs';
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
 import { PuppeteerScreenRecorder } from 'puppeteer-screen-recorder';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -14,6 +14,32 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 10000;
+
+// ============================================
+// FIND CHROME (Docker has it at /usr/bin/google-chrome-stable)
+// ============================================
+
+function findChromePath() {
+    const possiblePaths = [
+        process.env.PUPPETEER_EXECUTABLE_PATH,
+        '/usr/bin/google-chrome-stable',
+        '/usr/bin/google-chrome',
+        '/usr/bin/chromium-browser',
+        '/usr/bin/chromium'
+    ];
+    
+    for (const chromePath of possiblePaths) {
+        if (chromePath && fs.existsSync(chromePath)) {
+            console.log(`✅ Found Chrome at: ${chromePath}`);
+            return chromePath;
+        }
+    }
+    
+    console.warn('⚠️ Chrome not found!');
+    return null;
+}
+
+const CHROME_PATH = findChromePath();
 
 // ============================================
 // MIDDLEWARE
@@ -83,8 +109,14 @@ app.get('/api/record', async (req, res) => {
     let recorder = null;
     
     try {
-        // ✅ Puppeteer will use the downloaded Chrome
+        if (!CHROME_PATH) {
+            throw new Error('Chrome not found!');
+        }
+        
+        console.log(`🔧 Launching Chrome: ${CHROME_PATH}`);
+        
         browser = await puppeteer.launch({
+            executablePath: CHROME_PATH,
             headless: 'new',
             args: [
                 '--no-sandbox',
@@ -93,7 +125,10 @@ app.get('/api/record', async (req, res) => {
                 '--disable-accelerated-2d-canvas',
                 '--disable-gpu',
                 '--disable-software-rasterizer',
-                '--disable-features=IsolateOrigins,site-per-process'
+                '--disable-features=IsolateOrigins,site-per-process',
+                '--disable-background-timer-throttling',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-renderer-backgrounding'
             ]
         });
         
@@ -237,6 +272,7 @@ app.get('/api/status', (req, res) => {
         status: 'online',
         timestamp: new Date().toISOString(),
         recordings: recordings,
+        chrome: CHROME_PATH || 'Not found ❌',
         version: '1.0.0'
     });
 });
@@ -258,5 +294,5 @@ app.listen(PORT, () => {
     console.log(`📚 Server started at ${new Date().toISOString()}`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`📹 Recordings directory: ${recordingsDir}`);
+    console.log(`🔧 Chrome: ${CHROME_PATH || 'NOT FOUND ❌'}`);
 });
-
