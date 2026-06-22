@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Website Recorder with WhatsApp Integration",
   "main": "server.js",
+  "type": "module",
   "scripts": {
     "start": "node server.js"
   },
@@ -17,6 +18,6 @@
   },
   "engines": {
     "node": ">=20.0.0"
-  },
-  "type": "commonjs"
+  }
 }
+

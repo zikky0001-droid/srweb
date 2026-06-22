@@ -1,14 +1,16 @@
-const express = require('express');
-const path = require('path');
-const compression = require('compression');
-const helmet = require('helmet');
-const cors = require('cors');
-const axios = require('axios');
-const fs = require('fs');
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import compression from 'compression';
+import helmet from 'helmet';
+import cors from 'cors';
+import axios from 'axios';
+import fs from 'fs';
+import puppeteer from 'puppeteer';
+import { PuppeteerScreenRecorder } from 'puppeteer-screen-recorder';
 
-// ✅ Import puppeteer-screen-recorder correctly
-const puppeteer = require('puppeteer');
-const { PuppeteerScreenRecorder } = require('puppeteer-screen-recorder');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -255,3 +257,5 @@ app.listen(PORT, () => {
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`📹 Recordings directory: ${recordingsDir}`);
 });
+
+
