@@ -5,11 +5,41 @@ const helmet = require('helmet');
 const cors = require('cors');
 const axios = require('axios');
 const fs = require('fs');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 const { PuppeteerScreenRecorder } = require('puppeteer-screen-recorder');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
+
+// ============================================
+// FIND CHROME EXECUTABLE PATH ON RENDER
+// ============================================
+
+function findChromePath() {
+    // Common Chrome paths on Render/Linux
+    const possiblePaths = [
+        process.env.PUPPETEER_EXECUTABLE_PATH,  // Render env var
+        '/usr/bin/chromium-browser',
+        '/usr/bin/chromium',
+        '/usr/bin/google-chrome-stable',
+        '/usr/bin/google-chrome',
+        '/snap/bin/chromium',
+        '/usr/lib/chromium-browser/chromium-browser'
+    ];
+    
+    for (const chromePath of possiblePaths) {
+        if (chromePath && fs.existsSync(chromePath)) {
+            console.log(`✅ Found Chrome at: ${chromePath}`);
+            return chromePath;
+        }
+    }
+    
+    // If no Chrome found, fallback to null (will use puppeteer-core's built-in)
+    console.warn('⚠️ No Chrome found, trying default paths');
+    return null;
+}
+
+const CHROME_PATH = findChromePath();
 
 // ============================================
 // MIDDLEWARE
@@ -69,28 +99,36 @@ app.get('/api/record', async (req, res) => {
         return res.status(400).json({ error: 'URL parameter is required' });
     }
     
-    // Validate URL
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
         return res.status(400).json({ error: 'URL must start with http:// or https://' });
     }
     
     console.log(`🎬 Recording: ${url} for ${duration}s in ${format} format`);
+    console.log(`🔧 Using Chrome: ${CHROME_PATH || 'default'}`);
     
     let browser = null;
     let recorder = null;
     
     try {
-        // Launch browser
-        browser = await puppeteer.launch({
+        // ✅ FIXED: Launch with proper Chrome path
+        const launchOptions = {
             headless: true,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage',
                 '--disable-accelerated-2d-canvas',
-                '--disable-gpu'
+                '--disable-gpu',
+                '--disable-software-rasterizer'
             ]
-        });
+        };
+        
+        // Only add executablePath if Chrome was found
+        if (CHROME_PATH) {
+            launchOptions.executablePath = CHROME_PATH;
+        }
+        
+        browser = await puppeteer.launch(launchOptions);
         
         const page = await browser.newPage();
         
@@ -200,72 +238,30 @@ app.get('/api/record', async (req, res) => {
 // 📱 WHATSAPP INTEGRATION
 // ============================================
 
-// WhatsApp Webhook endpoint (for receiving messages)
 app.post('/api/whatsapp/webhook', async (req, res) => {
     try {
         const { message, from, to, mediaUrl } = req.body;
-        
         console.log(`📱 WhatsApp message from ${from}:`, message);
-        
-        // Process the message
-        if (message && message.toLowerCase().includes('record')) {
-            // Extract URL from message
-            const urlMatch = message.match(/(https?:\/\/[^\s]+)/);
-            if (urlMatch) {
-                const websiteUrl = urlMatch[0];
-                console.log(`🎬 Recording request for: ${websiteUrl}`);
-                
-                // Send acknowledgment
-                res.json({
-                    status: 'processing',
-                    message: `Recording ${websiteUrl}...`,
-                    url: websiteUrl
-                });
-                
-                // Here you would trigger the recording and send back the video
-                // This could be done asynchronously with a webhook callback
-                
-                return;
-            }
-        }
-        
         res.json({ status: 'received', message: 'Message received' });
-        
     } catch (error) {
         console.error('❌ WhatsApp webhook error:', error);
         res.status(500).json({ error: 'Webhook error', message: error.message });
     }
 });
 
-// WhatsApp send message endpoint
 app.post('/api/whatsapp/send', async (req, res) => {
     try {
         const { to, message, mediaUrl } = req.body;
-        
         if (!to || !message) {
             return res.status(400).json({ error: 'To and message are required' });
         }
-        
         console.log(`📤 Sending WhatsApp message to ${to}:`, message);
-        
-        // Here you would integrate with WhatsApp Business API or Twilio
-        // Example using Twilio:
-        /*
-        const client = require('twilio')(accountSid, authToken);
-        const msg = await client.messages.create({
-            body: message,
-            from: 'whatsapp:+14155238886',
-            to: `whatsapp:${to}`
-        });
-        */
-        
         res.json({
             status: 'sent',
             to: to,
             message: message,
             timestamp: new Date().toISOString()
         });
-        
     } catch (error) {
         console.error('❌ WhatsApp send error:', error);
         res.status(500).json({ error: 'Send failed', message: error.message });
@@ -277,10 +273,16 @@ app.post('/api/whatsapp/send', async (req, res) => {
 // ============================================
 
 app.get('/api/status', (req, res) => {
+    let recordings = 0;
+    try {
+        recordings = fs.readdirSync(recordingsDir).length;
+    } catch (e) {}
+    
     res.json({
         status: 'online',
         timestamp: new Date().toISOString(),
-        recordings: fs.readdirSync(recordingsDir).length,
+        recordings: recordings,
+        chrome: CHROME_PATH || 'Not found (using default)',
         version: '1.0.0'
     });
 });
@@ -302,7 +304,6 @@ app.listen(PORT, () => {
     console.log(`📚 Server started at ${new Date().toISOString()}`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`📹 Recordings directory: ${recordingsDir}`);
+    console.log(`🔧 Chrome path: ${CHROME_PATH || 'Using default'}`);
 });
-
-module.exports = app;
 

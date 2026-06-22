@@ -4,10 +4,10 @@ services:
     env: node
     region: oregon
     plan: free
-    buildCommand: npm install
+    buildCommand: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm install
     startCommand: node server.js
     envVars:
       - key: NODE_VERSION
         value: 18.0.0
-      - key: NODE_ENV
-        value: production
+      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+        value: true
