@@ -5,11 +5,10 @@
 
 const express = require('express');
 const cors = require('cors');
-const puppeteer = require('puppeteer-core');
+const puppeteer = require('puppeteer');  // ← Changed from puppeteer-core
 const { PuppeteerScreenRecorder } = require('puppeteer-screen-recorder');
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,39 +35,6 @@ if (!fs.existsSync(RECORDINGS_DIR)) {
 }
 
 // ============================================
-// FIND CHROME EXECUTABLE
-// ============================================
-function findChrome() {
-    const commonPaths = [
-        process.env.CHROME_PATH,
-        '/usr/bin/google-chrome',
-        '/usr/bin/google-chrome-stable',
-        '/usr/bin/chromium-browser',
-        '/usr/bin/chromium',
-        '/usr/bin/chrome',
-        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-        'C:/Program Files/Google/Chrome/Application/chrome.exe',
-        'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
-    ].filter(Boolean);
-    
-    for (const p of commonPaths) {
-        if (fs.existsSync(p)) {
-            return p;
-        }
-    }
-    
-    try {
-        const whichResult = execSync('which google-chrome || which chromium-browser || which chromium || which chrome', { encoding: 'utf8' });
-        const trimmed = whichResult.trim();
-        if (trimmed && fs.existsSync(trimmed)) {
-            return trimmed;
-        }
-    } catch (e) {}
-    
-    return null;
-}
-
-// ============================================
 // RECORD WEBSITE FUNCTION
 // ============================================
 async function recordWebsite(url, duration = DEFAULT_DURATION) {
@@ -80,16 +46,10 @@ async function recordWebsite(url, duration = DEFAULT_DURATION) {
             url = 'https://' + url;
         }
         
-        const chromePath = findChrome();
-        if (!chromePath) {
-            throw new Error('Chrome/Chromium not found. Please install Chrome or set CHROME_PATH.');
-        }
-        
-        console.log(`[SRWEB] Chrome: ${chromePath}`);
         console.log(`[SRWEB] Recording: ${url} (${duration}s)`);
         
+        // Launch browser with Puppeteer's bundled Chromium
         browser = await puppeteer.launch({
-            executablePath: chromePath,
             headless: 'new',
             args: [
                 '--no-sandbox',
@@ -161,7 +121,7 @@ app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
         timestamp: new Date().toISOString(),
-        chrome: findChrome() ? 'installed' : 'not found'
+        chromium: 'bundled' // Using Puppeteer's bundled Chromium
     });
 });
 
@@ -236,6 +196,6 @@ if (fs.existsSync(frontendPath)) {
 // ============================================
 app.listen(PORT, () => {
     console.log(`\n🚀 SRWEB Server running on http://localhost:${PORT}`);
-    console.log(`📹 Chrome: ${findChrome() || '❌ NOT FOUND'}`);
+    console.log(`📹 Chromium: Bundled with Puppeteer`);
     console.log(`📁 Recordings: ${RECORDINGS_DIR}\n`);
 });

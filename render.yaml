@@ -18,15 +18,13 @@ services:
     # Environment variables
     envVars:
       - key: NODE_VERSION
-        value: 20.0.0
+        value: 20.18.0
       - key: PORT
         value: 3000
-      - key: CHROME_PATH
-        value: /usr/bin/google-chrome-stable
       - key: PUPPETEER_SKIP_DOWNLOAD
-        value: true
+        value: false
       - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
-        value: true
+        value: false
     
     # Disk space for recordings
     disk:
@@ -64,3 +62,5 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 25.0.0
+        
+        
