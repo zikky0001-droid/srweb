@@ -1,7 +1,6 @@
-# Use Node.js 20 with Debian
 FROM node:20-slim
 
-# Install Chrome dependencies and Chrome itself
+# Install Chrome
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
@@ -12,10 +11,9 @@ RUN apt-get update && apt-get install -y \
     google-chrome-stable \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files first (for better caching)
+# Copy package files first
 COPY package*.json ./
 
 # Install dependencies
@@ -31,6 +29,9 @@ ENV NODE_ENV=production
 
 # Expose port
 EXPOSE 10000
+
+# ✅ DEBUG: List files before starting
+RUN ls -la /app
 
 # Start the server
 CMD ["node", "server.js"]

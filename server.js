@@ -9,14 +9,19 @@ import fs from 'fs';
 import puppeteer from 'puppeteer-core';
 import { PuppeteerScreenRecorder } from 'puppeteer-screen-recorder';
 
+// ✅ Get __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
+// ✅ Log current directory for debugging
+console.log(`📁 Current directory: ${__dirname}`);
+console.log(`📁 Files in directory:`, fs.readdirSync(__dirname));
+
 // ============================================
-// FIND CHROME (Docker has it at /usr/bin/google-chrome-stable)
+// FIND CHROME
 // ============================================
 
 function findChromePath() {
@@ -66,7 +71,11 @@ app.use(cors({
 
 app.use(compression());
 app.use(express.json());
-app.use(express.static(path.join(__dirname)));
+
+// ✅ FIXED: Serve static files from the current directory
+app.use(express.static(__dirname));
+// Also try serving from /app if needed
+app.use('/static', express.static(path.join(__dirname, 'static')));
 
 // ============================================
 // CREATE RECORDINGS DIRECTORY
@@ -125,10 +134,7 @@ app.get('/api/record', async (req, res) => {
                 '--disable-accelerated-2d-canvas',
                 '--disable-gpu',
                 '--disable-software-rasterizer',
-                '--disable-features=IsolateOrigins,site-per-process',
-                '--disable-background-timer-throttling',
-                '--disable-backgrounding-occluded-windows',
-                '--disable-renderer-backgrounding'
+                '--disable-features=IsolateOrigins,site-per-process'
             ]
         });
         
@@ -278,11 +284,35 @@ app.get('/api/status', (req, res) => {
 });
 
 // ============================================
-// SERVE FRONTEND
+// ✅ FIXED: Serve index.html for all routes
 // ============================================
 
+// Serve the main page
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    const indexPath = path.join(__dirname, 'index.html');
+    console.log(`📄 Serving index.html from: ${indexPath}`);
+    
+    if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        console.error('❌ index.html not found!');
+        res.status(404).send('index.html not found');
+    }
+});
+
+// Catch-all for SPA - serve index.html
+app.get('*', (req, res) => {
+    // Skip API routes
+    if (req.path.startsWith('/api/') || req.path === '/ping') {
+        return res.status(404).json({ error: 'Not found' });
+    }
+    
+    const indexPath = path.join(__dirname, 'index.html');
+    if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        res.status(404).send('Page not found');
+    }
 });
 
 // ============================================
@@ -295,4 +325,7 @@ app.listen(PORT, () => {
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`📹 Recordings directory: ${recordingsDir}`);
     console.log(`🔧 Chrome: ${CHROME_PATH || 'NOT FOUND ❌'}`);
+    console.log(`📁 Serving files from: ${__dirname}`);
 });
+
+
