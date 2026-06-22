@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SRWEB - Screen Record Websites</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎥 SRWEB</h1>
+            <p>Screen Record Any Website</p>
+        </header>
+
+        <main>
+            <div class="card">
+                <div class="input-group">
+                    <label for="urlInput">Website URL</label>
+                    <input 
+                        type="url" 
+                        id="urlInput" 
+                        placeholder="https://example.com"
+                        value="https://example.com"
+                    />
+                </div>
+
+                <div class="input-group">
+                    <label for="durationInput">Duration (seconds)</label>
+                    <input 
+                        type="number" 
+                        id="durationInput" 
+                        min="5" 
+                        max="60" 
+                        value="15"
+                    />
+                    <span class="hint">Max 60 seconds</span>
+                </div>
+
+                <button id="recordBtn" class="btn-primary">
+                    <span class="icon">🔴</span> Start Recording
+                </button>
+            </div>
+
+            <div id="status" class="status hidden">
+                <div class="status-content">
+                    <div class="spinner"></div>
+                    <p id="statusText">Loading...</p>
+                </div>
+            </div>
+
+            <div id="result" class="result hidden">
+                <div class="video-container">
+                    <video id="videoPlayer" controls></video>
+                </div>
+                <div class="video-info">
+                    <p><strong>URL:</strong> <span id="resultUrl"></span></p>
+                    <p><strong>Duration:</strong> <span id="resultDuration"></span>s</p>
+                    <p><strong>Size:</strong> <span id="resultSize"></span> MB</p>
+                </div>
+                <button id="downloadBtn" class="btn-secondary">⬇️ Download Video</button>
+            </div>
+        </main>
+
+        <footer>
+            <p>Powered by DEV ZIKKY TECH</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
