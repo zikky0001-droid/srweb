@@ -1,0 +1,46 @@
+
+# Node modules
+node_modules/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Recordings
+recordings/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Runtime files
+*.pid
+*.seed
+
+# Render cache
+.render/
+
+# Coverage
+coverage/
+
+# Playwright
+playwright-report/
+test-results/
+
+# Temporary files
+tmp/
+temp/
+
+# Optional
+*.webm
+*.mp4
