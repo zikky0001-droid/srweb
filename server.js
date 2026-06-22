@@ -5,7 +5,9 @@ const helmet = require('helmet');
 const cors = require('cors');
 const axios = require('axios');
 const fs = require('fs');
-const puppeteer = require('puppeteer');  // ← Full puppeteer, not core
+
+// ✅ Import puppeteer-screen-recorder correctly
+const puppeteer = require('puppeteer');
 const { PuppeteerScreenRecorder } = require('puppeteer-screen-recorder');
 
 const app = express();
@@ -79,7 +81,6 @@ app.get('/api/record', async (req, res) => {
     let recorder = null;
     
     try {
-        // ✅ Use puppeteer's default Chrome (it downloads during install)
         browser = await puppeteer.launch({
             headless: true,
             args: [
@@ -94,14 +95,12 @@ app.get('/api/record', async (req, res) => {
         
         const page = await browser.newPage();
         
-        // Set viewport
         await page.setViewport({
             width: 1280,
             height: 720,
             deviceScaleFactor: 1,
         });
         
-        // Setup recorder
         const config = {
             followNewTab: true,
             fps: 25,
@@ -120,39 +119,31 @@ app.get('/api/record', async (req, res) => {
         
         recorder = new PuppeteerScreenRecorder(page, config);
         
-        // Generate filename
         const timestamp = Date.now();
         const filename = `recording_${timestamp}.${format}`;
         const savePath = path.join(recordingsDir, filename);
         
-        // Start recording
         await recorder.start(savePath);
         
-        // Navigate to URL
         console.log(`🌐 Navigating to: ${url}`);
         await page.goto(url, {
             waitUntil: 'networkidle2',
             timeout: 30000
         });
         
-        // Wait for content
         await page.waitForTimeout(2000);
         
-        // Wait for recording duration
         console.log(`⏱️ Recording for ${duration} seconds...`);
         await new Promise(resolve => setTimeout(resolve, (parseInt(duration) * 1000) + 2000));
         
-        // Stop recorder
         try {
             await recorder.stop();
         } catch (e) {
             console.log('Recorder already stopped');
         }
         
-        // Close browser
         await browser.close();
         
-        // Check file exists
         if (!fs.existsSync(savePath)) {
             throw new Error('Recording file not created');
         }
@@ -162,7 +153,6 @@ app.get('/api/record', async (req, res) => {
         
         console.log(`✅ Recording complete: ${filename} (${fileSize.toFixed(2)} MB)`);
         
-        // Send file
         res.setHeader('Content-Type', `video/${format}`);
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         res.setHeader('Content-Length', fileStats.size);
@@ -172,7 +162,6 @@ app.get('/api/record', async (req, res) => {
         const fileStream = fs.createReadStream(savePath);
         fileStream.pipe(res);
         
-        // Clean up after send
         fileStream.on('end', () => {
             fs.unlink(savePath, (err) => {
                 if (err) console.warn('Could not delete temp file:', err);
