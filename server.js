@@ -5,41 +5,11 @@ const helmet = require('helmet');
 const cors = require('cors');
 const axios = require('axios');
 const fs = require('fs');
-const puppeteer = require('puppeteer-core');
+const puppeteer = require('puppeteer');  // ← Full puppeteer, not core
 const { PuppeteerScreenRecorder } = require('puppeteer-screen-recorder');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
-
-// ============================================
-// FIND CHROME EXECUTABLE PATH ON RENDER
-// ============================================
-
-function findChromePath() {
-    // Common Chrome paths on Render/Linux
-    const possiblePaths = [
-        process.env.PUPPETEER_EXECUTABLE_PATH,  // Render env var
-        '/usr/bin/chromium-browser',
-        '/usr/bin/chromium',
-        '/usr/bin/google-chrome-stable',
-        '/usr/bin/google-chrome',
-        '/snap/bin/chromium',
-        '/usr/lib/chromium-browser/chromium-browser'
-    ];
-    
-    for (const chromePath of possiblePaths) {
-        if (chromePath && fs.existsSync(chromePath)) {
-            console.log(`✅ Found Chrome at: ${chromePath}`);
-            return chromePath;
-        }
-    }
-    
-    // If no Chrome found, fallback to null (will use puppeteer-core's built-in)
-    console.warn('⚠️ No Chrome found, trying default paths');
-    return null;
-}
-
-const CHROME_PATH = findChromePath();
 
 // ============================================
 // MIDDLEWARE
@@ -104,14 +74,13 @@ app.get('/api/record', async (req, res) => {
     }
     
     console.log(`🎬 Recording: ${url} for ${duration}s in ${format} format`);
-    console.log(`🔧 Using Chrome: ${CHROME_PATH || 'default'}`);
     
     let browser = null;
     let recorder = null;
     
     try {
-        // ✅ FIXED: Launch with proper Chrome path
-        const launchOptions = {
+        // ✅ Use puppeteer's default Chrome (it downloads during install)
+        browser = await puppeteer.launch({
             headless: true,
             args: [
                 '--no-sandbox',
@@ -121,14 +90,7 @@ app.get('/api/record', async (req, res) => {
                 '--disable-gpu',
                 '--disable-software-rasterizer'
             ]
-        };
-        
-        // Only add executablePath if Chrome was found
-        if (CHROME_PATH) {
-            launchOptions.executablePath = CHROME_PATH;
-        }
-        
-        browser = await puppeteer.launch(launchOptions);
+        });
         
         const page = await browser.newPage();
         
@@ -282,7 +244,6 @@ app.get('/api/status', (req, res) => {
         status: 'online',
         timestamp: new Date().toISOString(),
         recordings: recordings,
-        chrome: CHROME_PATH || 'Not found (using default)',
         version: '1.0.0'
     });
 });
@@ -304,6 +265,4 @@ app.listen(PORT, () => {
     console.log(`📚 Server started at ${new Date().toISOString()}`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`📹 Recordings directory: ${recordingsDir}`);
-    console.log(`🔧 Chrome path: ${CHROME_PATH || 'Using default'}`);
 });
-

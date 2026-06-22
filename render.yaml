@@ -1,13 +1,21 @@
-services:
-  - type: web
-    name: srweb
-    env: node
-    region: oregon
-    plan: free
-    buildCommand: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm install
-    startCommand: node server.js
-    envVars:
-      - key: NODE_VERSION
-        value: 18.0.0
-      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
-        value: true
+{
+  "name": "srweb",
+  "version": "1.0.0",
+  "description": "Website Recorder with WhatsApp Integration",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "compression": "^1.7.4",
+    "helmet": "^7.0.0",
+    "cors": "^2.8.5",
+    "axios": "^1.6.0",
+    "puppeteer": "^21.0.0",
+    "puppeteer-screen-recorder": "^3.0.6"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
