@@ -16,34 +16,6 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 
 // ============================================
-// FIND CHROME ON RENDER
-// ============================================
-
-function findChromePath() {
-    // Common Chrome paths on Render
-    const possiblePaths = [
-        '/usr/bin/chromium-browser',
-        '/usr/bin/chromium',
-        '/usr/bin/google-chrome-stable',
-        '/usr/bin/google-chrome',
-        '/snap/bin/chromium',
-        '/usr/lib/chromium-browser/chromium-browser'
-    ];
-    
-    for (const chromePath of possiblePaths) {
-        if (fs.existsSync(chromePath)) {
-            console.log(`✅ Found Chrome at: ${chromePath}`);
-            return chromePath;
-        }
-    }
-    
-    console.warn('⚠️ Chrome not found, using default');
-    return null;
-}
-
-const CHROME_PATH = findChromePath();
-
-// ============================================
 // MIDDLEWARE
 // ============================================
 
@@ -111,9 +83,9 @@ app.get('/api/record', async (req, res) => {
     let recorder = null;
     
     try {
-        // ✅ FIXED: Use Render's Chrome with proper path
-        const launchOptions = {
-            headless: 'new',  // Use new headless mode
+        // ✅ Puppeteer will use the downloaded Chrome
+        browser = await puppeteer.launch({
+            headless: 'new',
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
@@ -123,17 +95,7 @@ app.get('/api/record', async (req, res) => {
                 '--disable-software-rasterizer',
                 '--disable-features=IsolateOrigins,site-per-process'
             ]
-        };
-        
-        // Add Chrome path if found
-        if (CHROME_PATH) {
-            launchOptions.executablePath = CHROME_PATH;
-            console.log(`🔧 Using Chrome: ${CHROME_PATH}`);
-        } else {
-            console.warn('⚠️ No Chrome path found, trying default');
-        }
-        
-        browser = await puppeteer.launch(launchOptions);
+        });
         
         const page = await browser.newPage();
         
@@ -275,7 +237,6 @@ app.get('/api/status', (req, res) => {
         status: 'online',
         timestamp: new Date().toISOString(),
         recordings: recordings,
-        chrome: CHROME_PATH || 'Using default',
         version: '1.0.0'
     });
 });
@@ -297,6 +258,5 @@ app.listen(PORT, () => {
     console.log(`📚 Server started at ${new Date().toISOString()}`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`📹 Recordings directory: ${recordingsDir}`);
-    console.log(`🔧 Chrome path: ${CHROME_PATH || 'Using default (will fail if not found)'}`);
 });
 
