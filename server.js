@@ -89,7 +89,7 @@ app.get('/ping', (req, res) => {
 });
 
 // ============================================
-// 🎬 RECORD WEBSITE API
+// 🎬 RECORD WEBSITE API - OPTIMIZED FOR SPEED
 // ============================================
 
 app.get('/api/record', async (req, res) => {
@@ -134,22 +134,25 @@ app.get('/api/record', async (req, res) => {
         
         const page = await browser.newPage();
         
+        // ✅ OPTIMIZED: Lower resolution for faster encoding
         await page.setViewport({
-            width: 1280,
-            height: 720,
+            width: 854,        // ✅ 480p instead of 720p
+            height: 480,
             deviceScaleFactor: 1,
         });
         
+        // ✅ OPTIMIZED: Faster encoding settings
         const config = {
             followNewTab: true,
-            fps: 25,
+            fps: 15,                    // ✅ Reduced from 25
             videoFrame: {
-                width: 1280,
-                height: 720,
+                width: 854,             // ✅ 480p
+                height: 480,
             },
             videoCodec: 'libx264',
-            videoPreset: 'ultrafast',
-            videoBitrate: 1000,
+            videoPreset: 'ultrafast',   // ✅ Fastest preset
+            videoCrf: 28,               // ✅ Higher = faster encoding
+            videoBitrate: 500,          // ✅ Lower = faster
             autopad: {
                 color: 'black'
             },
@@ -162,20 +165,21 @@ app.get('/api/record', async (req, res) => {
         const filename = `recording_${timestamp}.${format}`;
         const savePath = path.join(recordingsDir, filename);
         
+        // ✅ Start recording
         await recorder.start(savePath);
         
         console.log(`🌐 Navigating to: ${url}`);
         await page.goto(url, {
             waitUntil: 'networkidle2',
-            timeout: 30000
+            timeout: 15000  // ✅ Reduced timeout
         });
         
-        // ✅ FIXED: Use setTimeout instead of page.waitForTimeout
+        // ✅ Small delay for page stability
         console.log('⏳ Waiting for page to load...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         console.log(`⏱️ Recording for ${duration} seconds...`);
-        await new Promise(resolve => setTimeout(resolve, (parseInt(duration) * 1000) + 2000));
+        await new Promise(resolve => setTimeout(resolve, (parseInt(duration) * 1000) + 1000));
         
         try {
             await recorder.stop();
@@ -309,3 +313,4 @@ app.listen(PORT, () => {
     console.log(`📁 Serving files from: ${__dirname}`);
     console.log(`🌐 Visit: https://zrecord.onrender.com`);
 });
+
