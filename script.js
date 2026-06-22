@@ -31,6 +31,7 @@ let isRecording = false;
 
 // ============== INITIALIZE ==============
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 SRWEB Frontend loaded');
     loadTheme();
     renderHistory();
     updateStatus();
@@ -73,11 +74,18 @@ function showToast(message, type = 'info') {
 
 // ============== RECORDING ==============
 async function startRecording() {
-    if (isRecording) return;
+    console.log('🎬 startRecording() called');
+    
+    if (isRecording) {
+        console.log('⚠️ Already recording');
+        return;
+    }
     
     const url = recordUrl.value.trim();
     const duration = recordDuration.value;
     const format = recordFormat.value;
+    
+    console.log(`📝 URL: ${url}, Duration: ${duration}, Format: ${format}`);
     
     if (!url) {
         showToast('Please enter a website URL', 'error');
@@ -99,11 +107,20 @@ async function startRecording() {
     progressPercent.textContent = '0%';
     
     try {
-        const response = await fetch(`/api/record?url=${encodeURIComponent(url)}&duration=${duration}&format=${format}`);
+        const apiUrl = `/api/record?url=${encodeURIComponent(url)}&duration=${duration}&format=${format}`;
+        console.log(`📡 Fetching: ${apiUrl}`);
+        
+        const response = await fetch(apiUrl);
+        
+        console.log(`📡 Response status: ${response.status}`);
         
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Recording failed');
+            let errorMsg = 'Recording failed';
+            try {
+                const errorData = await response.json();
+                errorMsg = errorData.message || errorMsg;
+            } catch (e) {}
+            throw new Error(errorMsg);
         }
         
         // Get content disposition for filename
@@ -114,13 +131,15 @@ async function startRecording() {
             if (match) filename = match[1];
         }
         
+        console.log(`📄 Filename: ${filename}`);
+        
         // Simulate progress
         let progress = 0;
         const interval = setInterval(() => {
             progress += 5;
             if (progress > 90) clearInterval(interval);
-            updateProgress(progress, 'Recording...');
-        }, 500);
+            updateProgress(progress, 'Downloading...');
+        }, 300);
         
         // Get file as blob
         const blob = await response.blob();
@@ -154,7 +173,7 @@ async function startRecording() {
         showToast('✅ Recording complete!', 'success');
         
     } catch (error) {
-        console.error('Recording error:', error);
+        console.error('❌ Recording error:', error);
         showToast('❌ ' + error.message, 'error');
         updateProgress(0, 'Failed');
     }
@@ -209,7 +228,6 @@ function renderHistory() {
 }
 
 function downloadRecording(filename) {
-    // This would trigger download if the file still exists on server
     showToast('Download: ' + filename, 'info');
 }
 
@@ -230,9 +248,11 @@ async function updateStatus() {
         if (response.ok) {
             const data = await response.json();
             document.getElementById('serverStatus').textContent = 'Online ✅';
+            console.log('📊 Status:', data);
         }
     } catch (error) {
         document.getElementById('serverStatus').textContent = 'Offline ❌';
+        console.warn('⚠️ Status fetch failed');
     }
 }
 
@@ -303,40 +323,69 @@ function navigateTo(section) {
 
 // ============== EVENT LISTENERS ==============
 function setupEventListeners() {
-    recordBtn.addEventListener('click', startRecording);
-    recordUrl.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') startRecording();
-    });
+    console.log('🔗 Setting up event listeners...');
     
-    themeToggle.addEventListener('click', toggleTheme);
+    // ✅ Record button - main
+    if (recordBtn) {
+        recordBtn.addEventListener('click', startRecording);
+        console.log('✅ Record button attached');
+    } else {
+        console.warn('⚠️ Record button not found');
+    }
     
-    homeBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        navigateTo('home');
-    });
+    // ✅ Record URL - Enter key
+    if (recordUrl) {
+        recordUrl.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') startRecording();
+        });
+    }
     
-    recordNavBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        navigateTo('record');
-    });
+    // ✅ Theme toggle
+    if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
+    }
     
-    whatsappNavBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        navigateTo('whatsapp');
-    });
+    // ✅ Navigation
+    if (homeBtn) {
+        homeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            navigateTo('home');
+        });
+    }
     
-    statusNavBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        navigateTo('status');
-    });
+    if (recordNavBtn) {
+        recordNavBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            navigateTo('record');
+        });
+    }
     
-    whatsappSendBtn.addEventListener('click', sendWhatsApp);
-    whatsappMessage.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendWhatsApp();
-    });
+    if (whatsappNavBtn) {
+        whatsappNavBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            navigateTo('whatsapp');
+        });
+    }
     
-    // Update status periodically
-    setInterval(updateStatus, 60000);
+    if (statusNavBtn) {
+        statusNavBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            navigateTo('status');
+        });
+    }
+    
+    // ✅ WhatsApp send
+    if (whatsappSendBtn) {
+        whatsappSendBtn.addEventListener('click', sendWhatsApp);
+    }
+    
+    if (whatsappMessage) {
+        whatsappMessage.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendWhatsApp();
+        });
+    }
+    
+    console.log('✅ All event listeners setup complete');
 }
 
 // ============== EXPOSE TO HTML ==============
