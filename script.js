@@ -393,3 +393,4 @@ window.startRecording = startRecording;
 window.downloadRecording = downloadRecording;
 window.deleteRecording = deleteRecording;
 window.sendWhatsApp = sendWhatsApp;
+
