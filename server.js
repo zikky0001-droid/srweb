@@ -73,10 +73,30 @@ app.get('/api/record', async (req, res) => {
         });
     }
 
-    const durationSec = Math.min(
-        Math.max(Number(duration) || 10, 1),
-        120
-    );
+    const durationNum = parseInt(duration, 10);
+
+if (isNaN(durationNum)) {
+    return res.status(400).json({
+        success: false,
+        error: 'Duration must be a valid number'
+    });
+}
+
+if (durationNum < 10) {
+    return res.status(400).json({
+        success: false,
+        error: 'Minimum duration is 10 seconds'
+    });
+}
+
+if (durationNum > 120) {
+    return res.status(400).json({
+        success: false,
+        error: 'Maximum duration is 120 seconds'
+    });
+}
+
+const durationSec = durationNum;
 
     let browser;
 
@@ -144,7 +164,7 @@ app.get('/api/record', async (req, res) => {
                 while (Date.now() < end) {
 
                     window.scrollBy({
-                        top: 120 * direction,
+                        top: 240 * direction,
                         behavior: 'smooth'
                     });
 
