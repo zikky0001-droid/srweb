@@ -23,8 +23,10 @@ app.use(
     })
 );
 
-const recordingsDir =
-    path.join(__dirname, 'recordings');
+const recordingsDir = path.join(
+    __dirname,
+    'recordings'
+);
 
 if (!fs.existsSync(recordingsDir)) {
     fs.mkdirSync(recordingsDir, {
@@ -48,7 +50,7 @@ app.get('/api/status', (req, res) => {
     res.json({
         status: 'online',
         engine: 'Playwright',
-        format: 'webm',
+        format: 'WebM',
         timestamp: new Date().toISOString()
     });
 });
@@ -58,11 +60,14 @@ app.get('/api/record', async (req, res) => {
     const {
         url,
         duration = 10,
+        scroll = false,
+        speed = '1x',
         json = false
     } = req.query;
 
     if (!url) {
         return res.status(400).json({
+            success: false,
             error: 'URL required'
         });
     }
@@ -72,10 +77,25 @@ app.get('/api/record', async (req, res) => {
         !url.startsWith('https://')
     ) {
         return res.status(400).json({
+            success: false,
             error:
-                'URL must begin with http:// or https://'
+                'URL must start with http:// or https://'
         });
     }
+
+    const durationSec = Math.min(
+        Math.max(Number(duration) || 10, 1),
+        120
+    );
+
+    const speeds = {
+        '1x': 250,
+        '1.5x': 375,
+        '2x': 500
+    };
+
+    const scrollSpeed =
+        speeds[speed] || speeds['1x'];
 
     let browser;
 
@@ -87,8 +107,6 @@ app.get('/api/record', async (req, res) => {
                 '--no-sandbox',
                 '--disable-dev-shm-usage',
                 '--disable-gpu',
-                '--disable-extensions',
-                '--disable-background-networking',
                 '--mute-audio'
             ]
         });
@@ -99,7 +117,6 @@ app.get('/api/record', async (req, res) => {
                     width: 1280,
                     height: 720
                 },
-
                 recordVideo: {
                     dir: recordingsDir,
                     size: {
@@ -112,18 +129,85 @@ app.get('/api/record', async (req, res) => {
         const page =
             await context.newPage();
 
-        console.log(`Recording ${url}`);
+        const video =
+            page.video();
+
+        console.log(
+            `Recording ${url}`
+        );
 
         await page.goto(url, {
-            waitUntil: 'networkidle',
+            waitUntil: 'domcontentloaded',
             timeout: 30000
         });
 
         await page.waitForTimeout(
-            Number(duration) * 1000
+            3000
         );
 
-        const video = page.video();
+        const durationMs =
+            durationSec * 1000;
+
+        if (scroll === 'true') {
+
+            await page.evaluate(
+                async (
+                    durationMs,
+                    scrollSpeed
+                ) => {
+
+                    const end =
+                        Date.now() +
+                        durationMs;
+
+                    let direction = 1;
+
+                    while (
+                        Date.now() < end
+                    ) {
+
+                        window.scrollBy(
+                            0,
+                            scrollSpeed *
+                                direction
+                        );
+
+                        if (
+                            window.innerHeight +
+                                window.scrollY >=
+                            document.body
+                                .scrollHeight
+                        ) {
+                            direction = -1;
+                        }
+
+                        if (
+                            window.scrollY <= 0
+                        ) {
+                            direction = 1;
+                        }
+
+                        await new Promise(
+                            resolve =>
+                                setTimeout(
+                                    resolve,
+                                    1000
+                                )
+                        );
+                    }
+
+                },
+                durationMs,
+                scrollSpeed
+            );
+
+        } else {
+
+            await page.waitForTimeout(
+                durationMs
+            );
+
+        }
 
         await context.close();
 
@@ -149,7 +233,7 @@ app.get('/api/record', async (req, res) => {
         const stats =
             fs.statSync(finalPath);
 
-        const fileSize =
+        const size =
             (
                 stats.size /
                 1024 /
@@ -169,13 +253,21 @@ app.get('/api/record', async (req, res) => {
         }, 300000);
 
         if (json === 'true') {
+
             return res.json({
                 success: true,
                 filename,
-                size: `${fileSize} MB`,
-                duration,
+                duration: durationSec,
+                scroll:
+                    scroll === 'true',
+                speed:
+                    speed in speeds
+                        ? speed
+                        : '1x',
+                size: `${size} MB`,
                 downloadUrl
             });
+
         }
 
         res.download(
@@ -201,19 +293,58 @@ app.get('/api/record', async (req, res) => {
 });
 
 app.get('/', (req, res) => {
+
     res.json({
         name: 'SRWEB',
         engine: 'Playwright',
         format: 'WebM',
+
+        parameters: {
+            url: 'Website URL',
+            duration:
+                'Recording duration in seconds (1-120)',
+            scroll:
+                'Enable scrolling (true or false)',
+            speed:
+                '1x, 1.5x, or 2x',
+            json:
+                'Return JSON response (true or false)'
+        },
+
         endpoints: {
-            record:
-                '/api/record?url=https://example.com',
-            api:
-                '/api/record?url=https://example.com&json=true',
+
+            ping:
+                '/ping',
+
             status:
-                '/api/status'
+                '/api/status',
+
+            basic:
+                '/api/record?url=https://example.com',
+
+            json:
+                '/api/record?url=https://example.com&json=true',
+
+            duration:
+                '/api/record?url=https://example.com&duration=20',
+
+            scroll:
+                '/api/record?url=https://example.com&scroll=true',
+
+            speed1x:
+                '/api/record?url=https://example.com&scroll=true&speed=1x',
+
+            speed15x:
+                '/api/record?url=https://example.com&scroll=true&speed=1.5x',
+
+            speed2x:
+                '/api/record?url=https://example.com&scroll=true&speed=2x',
+
+            full:
+                '/api/record?url=https://example.com&duration=20&scroll=true&speed=1.5x&json=true'
         }
     });
+
 });
 
 app.listen(PORT, () => {
@@ -221,3 +352,4 @@ app.listen(PORT, () => {
         `SRWEB running on port ${PORT}`
     );
 });
+
