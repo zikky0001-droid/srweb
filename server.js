@@ -49,54 +49,107 @@ app.get('/api/status', (req, res) => {
     });
 });
 
+/* ---------------- HOME ---------------- */
+app.get('/', (req, res) => {
+    res.json({
+        name: 'SRWEB',
+        engine: 'Playwright',
+        format: 'WebM',
+        auth: {
+            required: true,
+            key_format: 'Ask the developer'
+        },
+        parameters: {
+            apiKey: 'devzikky',
+            url: 'http/https URL',
+            duration: '10-120 seconds',
+            scroll: 'true or false',
+            json: 'true or false'
+        }
+    });
+});
+
 /* ---------------- RECORD API ---------------- */
 app.get('/api/record', async (req, res) => {
 
-    const {
-        url,
-        duration = 10,
-        scroll = false,
-        json = false
-    } = req.query;
+    const { apiKey, url, duration, scroll, json } = req.query;
 
-    if (!url) {
-        return res.status(400).json({
+    /* ---------------- API KEY CHECK (FIRST PRIORITY) ---------------- */
+    if (!apiKey || apiKey !== 'devzikky') {
+        return res.status(401).json({
             success: false,
-            error: 'URL required'
+            error: 'Invalid or missing API key'
         });
     }
 
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    /* ---------------- EMPTY PARAM CHECK ---------------- */
+    if (!url || !duration || !scroll || !json) {
         return res.status(400).json({
             success: false,
-            error: 'URL must start with http:// or https://'
+            error: 'Missing required parameters',
+            required: {
+                apiKey: 'devzikky',
+                url: 'http/https URL',
+                duration: '10-120',
+                scroll: 'true or false',
+                json: 'true or false'
+            }
         });
     }
 
+    /* ---------------- URL VALIDATION ---------------- */
+    if (
+        typeof url !== 'string' ||
+        (!url.startsWith('http://') && !url.startsWith('https://'))
+    ) {
+        return res.status(400).json({
+            success: false,
+            error: 'Invalid URL. Must start with http:// or https://'
+        });
+    }
+
+    /* ---------------- BOOLEAN VALIDATION ---------------- */
+    const validateBool = (val, name) => {
+        if (val !== 'true' && val !== 'false') {
+            return res.status(400).json({
+                success: false,
+                error: `${name} must be true or false only`
+            });
+        }
+        return val === 'true';
+    };
+
+    const isScroll = validateBool(scroll, 'scroll');
+    const isJson = validateBool(json, 'json');
+
+    if (typeof isScroll === 'undefined') return;
+    if (typeof isJson === 'undefined') return;
+
+    /* ---------------- DURATION VALIDATION ---------------- */
     const durationNum = parseInt(duration, 10);
 
-if (isNaN(durationNum)) {
-    return res.status(400).json({
-        success: false,
-        error: 'Duration must be a valid number'
-    });
-}
+    if (isNaN(durationNum)) {
+        return res.status(400).json({
+            success: false,
+            error: 'Duration must be a number'
+        });
+    }
 
-if (durationNum < 10) {
-    return res.status(400).json({
-        success: false,
-        error: 'Minimum duration is 10 seconds'
-    });
-}
+    if (durationNum < 10) {
+        return res.status(400).json({
+            success: false,
+            error: 'Minimum duration is 10 seconds'
+        });
+    }
 
-if (durationNum > 120) {
-    return res.status(400).json({
-        success: false,
-        error: 'Maximum duration is 120 seconds'
-    });
-}
+    if (durationNum > 120) {
+        return res.status(400).json({
+            success: false,
+            error: 'Maximum duration is 120 seconds'
+        });
+    }
 
-const durationSec = durationNum;
+    const durationSec = durationNum;
 
     let browser;
 
@@ -113,16 +166,10 @@ const durationSec = durationNum;
         });
 
         const context = await browser.newContext({
-            viewport: {
-                width: 1280,
-                height: 720
-            },
+            viewport: { width: 1280, height: 720 },
             recordVideo: {
                 dir: recordingsDir,
-                size: {
-                    width: 1280,
-                    height: 720
-                }
+                size: { width: 1280, height: 720 }
             }
         });
 
@@ -136,19 +183,16 @@ const durationSec = durationNum;
             timeout: 30000
         });
 
-        // ✅ reduced loading delay (1 sec)
         await page.waitForTimeout(1000);
 
         const durationMs = durationSec * 1000;
 
-        if (scroll === 'true') {
+        if (isScroll) {
 
-            // ---------- SMART DELAY BEFORE SCROLL ----------
-            let prepDelay = 7000;
-
-            if (durationSec >= 15) prepDelay = 10000;
-            if (durationSec >= 20) prepDelay = 12000;
-            if (durationSec >= 30) prepDelay = 13000;
+            let prepDelay = 5000;
+            if (durationSec >= 15) prepDelay = 7000;
+            if (durationSec >= 20) prepDelay = 9000;
+            if (durationSec >= 30) prepDelay = 11000;
 
             const safeDelay = Math.min(prepDelay, durationMs / 2);
 
@@ -164,7 +208,7 @@ const durationSec = durationNum;
                 while (Date.now() < end) {
 
                     window.scrollBy({
-                        top: 240 * direction,
+                        top: 220 * direction,
                         behavior: 'smooth'
                     });
 
@@ -176,13 +220,12 @@ const durationSec = durationNum;
                     if (atBottom) direction = -1;
                     if (atTop) direction = 1;
 
-                    await new Promise(resolve => setTimeout(resolve, 300));
+                    await new Promise(r => setTimeout(r, 300));
                 }
 
             }, scrollTime);
 
         } else {
-
             await page.waitForTimeout(durationMs);
         }
 
@@ -199,22 +242,24 @@ const durationSec = durationNum;
         const stats = fs.statSync(finalPath);
         const size = (stats.size / 1024 / 1024).toFixed(2);
 
-        const downloadUrl = `${req.protocol}://${req.get('host')}/videos/${filename}`;
+        const downloadUrl =
+            `${req.protocol}://${req.get('host')}/videos/${filename}`;
 
         setTimeout(() => {
             fs.unlink(finalPath, () => {});
         }, 300000);
 
-        if (json === 'true') {
-            return res.json({
-                success: true,
-                filename,
-                duration: durationSec,
-                scroll: scroll === 'true',
-                size: `${size} MB`,
-                downloadUrl
-            });
-        }
+        const response = {
+            success: true,
+            filename,
+            duration: durationSec,
+            scroll: isScroll,
+            json: isJson,
+            size: `${size} MB`,
+            downloadUrl
+        };
+
+        if (isJson) return res.json(response);
 
         res.download(finalPath, filename);
 
@@ -231,32 +276,6 @@ const durationSec = durationNum;
             error: err.message
         });
     }
-});
-
-/* ---------------- HOME ---------------- */
-app.get('/', (req, res) => {
-    res.json({
-        name: 'SRWEB',
-        engine: 'Playwright',
-        format: 'WebM',
-
-        parameters: {
-            url: 'Website URL',
-            duration: 'Recording duration in seconds (1-120)',
-            scroll: 'Enable scrolling (true or false)',
-            json: 'Return JSON response (true or false)'
-        },
-
-        endpoints: {
-            ping: '/ping',
-            status: '/api/status',
-            basic: '/api/record?url=https://example.com',
-            json: '/api/record?url=https://example.com&json=true',
-            duration: '/api/record?url=https://example.com&duration=20',
-            scroll: '/api/record?url=https://example.com&scroll=true',
-            full: '/api/record?url=https://example.com&duration=20&scroll=true&json=true'
-        }
-    });
 });
 
 app.listen(PORT, () => {
