@@ -151,56 +151,59 @@ app.get('/api/record', async (req, res) => {
         if (scroll === 'true') {
 
             await page.evaluate(
-                async (
-                    durationMs,
-                    scrollSpeed
-                ) => {
+    async ({
+        durationMs,
+        scrollSpeed
+    }) => {
 
-                    const end =
-                        Date.now() +
-                        durationMs;
+        const end =
+            Date.now() +
+            durationMs;
 
-                    let direction = 1;
+        let direction = 1;
 
-                    while (
-                        Date.now() < end
-                    ) {
+        while (
+            Date.now() < end
+        ) {
 
-                        window.scrollBy(
-                            0,
-                            scrollSpeed *
-                                direction
-                        );
+            window.scrollBy({
+                top:
+                    scrollSpeed *
+                    direction,
+                behavior:
+                    'smooth'
+            });
 
-                        if (
-                            window.innerHeight +
-                                window.scrollY >=
-                            document.body
-                                .scrollHeight
-                        ) {
-                            direction = -1;
-                        }
+            if (
+                window.innerHeight +
+                    window.scrollY >=
+                document.body
+                    .scrollHeight
+            ) {
+                direction = -1;
+            }
 
-                        if (
-                            window.scrollY <= 0
-                        ) {
-                            direction = 1;
-                        }
+            if (
+                window.scrollY <= 0
+            ) {
+                direction = 1;
+            }
 
-                        await new Promise(
-                            resolve =>
-                                setTimeout(
-                                    resolve,
-                                    1000
-                                )
-                        );
-                    }
-
-                },
-                durationMs,
-                scrollSpeed
+            await new Promise(
+                resolve =>
+                    setTimeout(
+                        resolve,
+                        1000
+                    )
             );
+        }
 
+    },
+    {
+        durationMs,
+        scrollSpeed
+    }
+);
         } else {
 
             await page.waitForTimeout(
@@ -302,14 +305,14 @@ app.get('/', (req, res) => {
         parameters: {
             url: 'Website URL',
             duration:
-                'Recording duration in seconds (1-120)',
+        'Recording duration in seconds (1-120)',
             scroll:
-                'Enable scrolling (true or false)',
+        'Enable scrolling (true or false)',
             speed:
-                '1x, 1.5x, or 2x',
+        'The scrolling speed changer (1x, 1.5x, or 2x)',
             json:
-                'Return JSON response (true or false)'
-        },
+        'Return JSON response (true or false)'
+},
 
         endpoints: {
 
