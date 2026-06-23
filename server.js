@@ -60,12 +60,33 @@ app.get('/', (req, res) => {
             key_format: 'Ask the developer'
         },
         parameters: {
-            apiKey: 'devzikky',
-            url: 'http/https URL',
-            duration: '10-120 seconds',
-            scroll: 'true or false',
-            json: 'true or false'
-        }
+    apiKey: 'Required (must be: devzikky)',
+    url: 'Website URL (http/https only)',
+    duration: '10–120 seconds',
+    scroll: 'true or false',
+    json: 'true or false'
+},
+        endpoints: {
+
+    ping: '/ping',
+
+    status: '/api/status',
+
+    basic:
+        '/api/record?apiKey=devzikky&url=https://example.com',
+
+    json:
+        '/api/record?apiKey=devzikky&url=https://example.com&json=true',
+
+    duration:
+        '/api/record?apiKey=devzikky&url=https://example.com&duration=20',
+
+    scroll:
+        '/api/record?apiKey=devzikky&url=https://example.com&scroll=true',
+
+    full:
+        '/api/record?apiKey=devzikky&url=https://example.com&duration=20&scroll=true&json=true'
+}
     });
 });
 
