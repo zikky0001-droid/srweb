@@ -55,96 +55,63 @@ app.get('/', (req, res) => {
         name: 'SRWEB',
         engine: 'Playwright',
         format: 'WebM',
+
         auth: {
             required: true,
-            key_format: 'Ask the developer'
+            key: 'devzikky'
         },
+
         parameters: {
-    apiKey: 'Required (must be: devzikky)',
-    url: 'Website URL (http/https only)',
-    duration: '10–120 seconds',
-    scroll: 'true or false',
-    json: 'true or false'
-},
+            apiKey: 'Required (must be devzikky)',
+            url: 'Website URL (http/https only)',
+            duration: '10–120 seconds',
+            scroll: 'true or false',
+            json: 'true or false'
+        },
+
         endpoints: {
-
-    ping: '/ping',
-
-    status: '/api/status',
-
-    basic:
-        '/api/record?apiKey=devzikky&url=https://example.com',
-
-    json:
-        '/api/record?apiKey=devzikky&url=https://example.com&json=true',
-
-    duration:
-        '/api/record?apiKey=devzikky&url=https://example.com&duration=20',
-
-    scroll:
-        '/api/record?apiKey=devzikky&url=https://example.com&scroll=true',
-
-    full:
-        '/api/record?apiKey=devzikky&url=https://example.com&duration=20&scroll=true&json=true'
-}
+            ping: '/ping',
+            status: '/api/status',
+            basic: '/api/record?apiKey=devzikky&url=https://example.com',
+            json: '/api/record?apiKey=devzikky&url=https://example.com&json=true',
+            duration: '/api/record?apiKey=devzikky&url=https://example.com&duration=20',
+            scroll: '/api/record?apiKey=devzikky&url=https://example.com&scroll=true',
+            full: '/api/record?apiKey=devzikky&url=https://example.com&duration=20&scroll=true&json=true'
+        }
     });
 });
 
 /* ---------------- RECORD API ---------------- */
 app.get('/api/record', async (req, res) => {
 
-    const { apiKey, url, duration, scroll, json } = req.query;
+    const { apiKey, url, duration = 10, scroll = false, json = false } = req.query;
 
-    /* ---------------- API KEY CHECK (FIRST PRIORITY) ---------------- */
+    /* ---------------- API KEY CHECK ---------------- */
     if (!apiKey || apiKey !== 'devzikky') {
         return res.status(401).json({
             success: false,
-            error: 'Invalid or missing API key'
-        });
-    }
-
-    /* ---------------- EMPTY PARAM CHECK ---------------- */
-    if (!url || !duration || !scroll || !json) {
-        return res.status(400).json({
-            success: false,
-            error: 'Missing required parameters',
-            required: {
-                apiKey: 'devzikky',
-                url: 'http/https URL',
-                duration: '10-120',
-                scroll: 'true or false',
-                json: 'true or false'
-            }
+            error: 'Invalid API key'
         });
     }
 
     /* ---------------- URL VALIDATION ---------------- */
-    if (
-        typeof url !== 'string' ||
-        (!url.startsWith('http://') && !url.startsWith('https://'))
-    ) {
+    if (!url || typeof url !== 'string') {
         return res.status(400).json({
             success: false,
-            error: 'Invalid URL. Must start with http:// or https://'
+            error: 'URL is required'
         });
     }
 
-    /* ---------------- BOOLEAN VALIDATION ---------------- */
-    const validateBool = (val, name) => {
-        if (val !== 'true' && val !== 'false') {
-            return res.status(400).json({
-                success: false,
-                error: `${name} must be true or false only`
-            });
-        }
-        return val === 'true';
-    };
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        return res.status(400).json({
+            success: false,
+            error: 'URL must start with http:// or https://'
+        });
+    }
 
-    const isScroll = validateBool(scroll, 'scroll');
-    const isJson = validateBool(json, 'json');
-
-    if (typeof isScroll === 'undefined') return;
-    if (typeof isJson === 'undefined') return;
+    /* ---------------- BOOLEAN CLEANUP ---------------- */
+    const isScroll = scroll === 'true';
+    const isJson = json === 'true';
 
     /* ---------------- DURATION VALIDATION ---------------- */
     const durationNum = parseInt(duration, 10);
@@ -199,23 +166,25 @@ app.get('/api/record', async (req, res) => {
 
         console.log(`Recording ${url}`);
 
+        /* ⚡ faster load mode */
         await page.goto(url, {
             waitUntil: 'domcontentloaded',
             timeout: 30000
         });
 
-        await page.waitForTimeout(1000);
+        /* ⚡ reduced delay */
+        await page.waitForTimeout(500);
 
         const durationMs = durationSec * 1000;
 
+        /* ---------------- SCROLL MODE ---------------- */
         if (isScroll) {
 
-            let prepDelay = 5000;
-            if (durationSec >= 15) prepDelay = 7000;
-            if (durationSec >= 20) prepDelay = 9000;
-            if (durationSec >= 30) prepDelay = 11000;
+            let prepDelay = 3000;
+            if (durationSec >= 20) prepDelay = 5000;
+            if (durationSec >= 40) prepDelay = 6000;
 
-            const safeDelay = Math.min(prepDelay, durationMs / 2);
+            const safeDelay = Math.min(prepDelay, durationMs / 3);
 
             await page.waitForTimeout(safeDelay);
 
@@ -228,10 +197,8 @@ app.get('/api/record', async (req, res) => {
 
                 while (Date.now() < end) {
 
-                    window.scrollBy({
-                        top: 220 * direction,
-                        behavior: 'smooth'
-                    });
+                    /* ⚡ fast scroll (NO smooth) */
+                    window.scrollBy(0, 300 * direction);
 
                     const atBottom =
                         window.innerHeight + window.scrollY >= document.body.scrollHeight;
@@ -241,7 +208,8 @@ app.get('/api/record', async (req, res) => {
                     if (atBottom) direction = -1;
                     if (atTop) direction = 1;
 
-                    await new Promise(r => setTimeout(r, 300));
+                    /* ⚡ faster loop */
+                    await new Promise(r => setTimeout(r, 120));
                 }
 
             }, scrollTime);
@@ -250,6 +218,7 @@ app.get('/api/record', async (req, res) => {
             await page.waitForTimeout(durationMs);
         }
 
+        /* ---------------- FINALIZE VIDEO ---------------- */
         await context.close();
 
         const tempPath = await video.path();
